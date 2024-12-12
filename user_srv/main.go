@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"study_mxshop_srvs/user_srv/handler"
+	"study_mxshop_srvs/user_srv/initialize"
 	"study_mxshop_srvs/user_srv/proto"
 	"syscall"
 )
@@ -15,6 +16,11 @@ import (
 func main() {
 	IP := flag.String("ip", "0.0.0.0", "ip地址")
 	Port := flag.Int("port", 50051, "端口号")
+
+	// 初始化
+	initialize.InitLogger()
+	initialize.InitConfig()
+	initialize.InitDB()
 
 	server := grpc.NewServer()
 	proto.RegisterUserServer(server, &handler.UserServer{})
