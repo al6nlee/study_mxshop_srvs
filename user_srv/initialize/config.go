@@ -17,9 +17,9 @@ func InitConfig() {
 	// 从配置文件中读取出对应的配置
 	debug := GetEnvInfo("MXSHOP_DEBUG")
 	configFilePrefix := "config"
-	configFileName := fmt.Sprintf("user_srv/%s-pro.yaml", configFilePrefix)
+	configFileName := fmt.Sprintf("user_srv/%s-dev.yaml", configFilePrefix)
 	if debug {
-		configFileName = fmt.Sprintf("user_srv/%s-dev.yaml", configFilePrefix)
+		configFileName = fmt.Sprintf("user_srv/%s-pro.yaml", configFilePrefix)
 	}
 
 	v := viper.New()
