@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/consul/api"
 	uuid "github.com/satori/go.uuid"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -15,13 +16,16 @@ import (
 	"study_mxshop_srvs/user_srv/handler"
 	"study_mxshop_srvs/user_srv/initialize"
 	"study_mxshop_srvs/user_srv/proto"
+	"study_mxshop_srvs/user_srv/utils"
 	"syscall"
 )
 
 func main() {
 	IP := flag.String("ip", "0.0.0.0", "ip地址")
-	Port := flag.Int("port", 50051, "端口号")
-
+	Port := flag.Int("port", 0, "端口号")
+	if *Port == 0 {
+		*Port, _ = utils.GetFreePort()
+	}
 	// 初始化
 	initialize.InitLogger()
 	initialize.InitConfig()
@@ -71,6 +75,7 @@ func main() {
 		panic(err)
 	}
 
+	zap.S().Debugf("启动服务器, 端口：%d", *Port)
 	go func() {
 		err = server.Serve(lis)
 		if err != nil {
