@@ -12,7 +12,9 @@ import (
 	"os"
 	"os/signal"
 	"study_mxshop_srvs/goods_srv/global"
+	"study_mxshop_srvs/goods_srv/handler"
 	"study_mxshop_srvs/goods_srv/initialize"
+	"study_mxshop_srvs/goods_srv/proto"
 	"study_mxshop_srvs/goods_srv/utils"
 	"study_mxshop_srvs/goods_srv/utils/register/consul"
 	"syscall"
@@ -30,7 +32,7 @@ func main() {
 	initialize.InitDB()
 
 	server := grpc.NewServer()
-	// proto.RegisterUserServer(server, &handler.UserServer{})
+	proto.RegisterGoodsServer(server, &handler.GoodsServer{})
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
 		panic("failed to listen:" + err.Error())

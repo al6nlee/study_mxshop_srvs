@@ -1,5 +1,5 @@
 name: goods_srv
-host: 100.200.27.114
+host: 10.8.117.74
 tags:
   - goods_srv
   - dev
