@@ -1,0 +1,5 @@
+host: '172.26.25.139'
+port: 30048
+namespace: '7e2c6a84-da94-435f-a826-1567f2702f72'
+dataid: 'dev'
+group: 'srv'
