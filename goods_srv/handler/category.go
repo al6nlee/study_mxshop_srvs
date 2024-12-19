@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -15,6 +14,7 @@ import (
 // 商品分类
 func (s *GoodsServer) GetAllCategorysList(context.Context, *emptypb.Empty) (*proto.CategoryListResponse, error) {
 	/*
+		定义返回的数据结构，因为gorm里面的 Preload 可以很好的整理数据，这里就不用web单独整理了
 		[
 			{
 				"id":xxx,
@@ -23,22 +23,28 @@ func (s *GoodsServer) GetAllCategorysList(context.Context, *emptypb.Empty) (*pro
 				"is_tab":false,
 				"parent":13xxx,
 				"sub_category":[
-					"id":xxx,
-					"name":"",
-					"level":1,
-					"is_tab":false,
-					"sub_category":[]
+					{
+						"id":xxx,
+						"name":"",
+						"level":2,
+						"is_tab":false,
+						"sub_category":[]
+					}
 				]
 			}
 		]
 	*/
 	var categorys []model.Category
 	global.DB.Where(&model.Category{Level: 1}).Preload("SubCategory.SubCategory").Find(&categorys)
+	// Preload("SubCategory") 拿到二级类目，背后执行的原生sql
+	// SELECT * FROM `category` WHERE `category`.`level` = 1 AND `category`.`deleted_at` IS NULL
+	// SELECT * FROM `category` WHERE `category`.`parent_category_id` IN (1001,1002,1003) AND `category`.`deleted_at` IS NULL
+	// SELECT * FROM `category` WHERE `category`.`parent_category_id` IN (2001,2002,2003,2004,2005,2006,2007,2008,2009) AND `category`.`deleted_at` IS NULL
+
 	b, _ := json.Marshal(&categorys)
 	return &proto.CategoryListResponse{JsonData: string(b)}, nil
 }
 
-// //获取子分类
 func (s *GoodsServer) GetSubCategory(ctx context.Context, req *proto.CategoryListRequest) (*proto.SubCategoryListResponse, error) {
 	categoryListResponse := proto.SubCategoryListResponse{}
 
@@ -59,9 +65,10 @@ func (s *GoodsServer) GetSubCategory(ctx context.Context, req *proto.CategoryLis
 	var subCategoryResponse []*proto.CategoryInfoResponse
 	// preloads := "SubCategory"
 	// if category.Level == 1 {
-	//	preloads = "SubCategory.SubCategory"
+	// 	preloads = "SubCategory.SubCategory"
 	// }
-	global.DB.Where(&model.Category{ParentCategoryID: req.Id}).Find(&subCategorys)
+	// global.DB.Where(&model.Category{ParentCategoryID: req.Id}).Preload(preloads).Find(&subCategorys)
+	global.DB.Where(&model.Category{ParentCategoryID: req.Id}).Find(&subCategorys) // 只往下多找一级
 	for _, subCategory := range subCategorys {
 		subCategoryResponse = append(subCategoryResponse, &proto.CategoryInfoResponse{
 			Id:             subCategory.ID,
@@ -75,6 +82,7 @@ func (s *GoodsServer) GetSubCategory(ctx context.Context, req *proto.CategoryLis
 	categoryListResponse.SubCategorys = subCategoryResponse
 	return &categoryListResponse, nil
 }
+
 func (s *GoodsServer) CreateCategory(ctx context.Context, req *proto.CategoryInfoRequest) (*proto.CategoryInfoResponse, error) {
 	category := model.Category{}
 	cMap := map[string]interface{}{}
@@ -85,8 +93,7 @@ func (s *GoodsServer) CreateCategory(ctx context.Context, req *proto.CategoryInf
 		// 去查询父类目是否存在
 		cMap["parent_category_id"] = req.ParentCategory
 	}
-	tx := global.DB.Model(&model.Category{}).Create(cMap)
-	fmt.Println(tx)
+	global.DB.Model(&model.Category{}).Create(cMap)
 	return &proto.CategoryInfoResponse{Id: int32(category.ID)}, nil
 }
 
