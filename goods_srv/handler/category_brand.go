@@ -19,6 +19,7 @@ func (s *GoodsServer) CategoryBrandList(ctx context.Context, req *proto.Category
 	global.DB.Model(&model.GoodsCategoryBrand{}).Count(&total)
 	categoryBrandListResponse.Total = int32(total)
 
+	// Preload("Category").Preload("Brands")  外键相关
 	global.DB.Preload("Category").Preload("Brands").Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&categoryBrands)
 
 	var categoryResponses []*proto.CategoryBrandResponse
