@@ -5,9 +5,11 @@ go 1.22.10
 require (
 	github.com/anaskhan96/go-password-encoder v0.0.0-20201010210601-c765b799fd72
 	github.com/fsnotify/fsnotify v1.8.0
+	github.com/go-redsync/redsync/v4 v4.13.0
 	github.com/golang/protobuf v1.5.4
 	github.com/hashicorp/consul/api v1.28.2
 	github.com/nacos-group/nacos-sdk-go v1.1.5
+	github.com/redis/go-redis/v9 v9.7.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/viper v1.19.0
 	go.uber.org/zap v1.21.0
@@ -22,6 +24,8 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1800 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.14.1 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect

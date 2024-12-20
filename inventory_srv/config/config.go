@@ -13,12 +13,20 @@ type ConsulConfig struct {
 	Port int    `mapstructure:"port" json:"port" yaml:"port"`
 }
 
+type RedisConfig struct {
+	Host     string `mapstructure:"host" json:"host" yaml:"host"`
+	Port     int    `mapstructure:"port" json:"port" yaml:"port"`
+	Password string `mapstructure:"password" json:"password" yaml:"password"`
+	Expire   int    `mapstructure:"expire" json:"expire" yaml:"expire"`
+}
+
 type ServerConfig struct {
 	Name       string       `mapstructure:"name" json:"name" yaml:"name"`
 	Host       string       `mapstructure:"host" yaml:"host"`
 	Tags       []string     `mapstructure:"tags" json:"tags" yaml:"tags"`
 	MysqlInfo  MysqlConfig  `mapstructure:"mysql" json:"mysql" yaml:"mysql"`
 	ConsulInfo ConsulConfig `mapstructure:"consul" json:"consul" yaml:"consul"`
+	RedisInfo  RedisConfig  `mapstructure:"redis" json:"redis" yaml:"redis"`
 }
 
 type NacosConfig struct {

@@ -30,6 +30,7 @@ func main() {
 	initialize.InitLogger()
 	initialize.InitConfig()
 	initialize.InitDB()
+	initialize.InitRedsync()
 
 	server := grpc.NewServer()
 	proto.RegisterInventoryServer(server, &handler.InventoryServer{})
