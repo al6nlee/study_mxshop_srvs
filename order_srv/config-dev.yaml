@@ -1,0 +1,15 @@
+name: order_srv
+host: 10.8.117.74
+tags:
+  - order_srv
+  - dev
+  - alan
+mysql:
+  host: "172.26.25.139"
+  port: 30006
+  db: "mxshop_order_srv"
+  user: "root"
+  password: "admin123"
+consul:
+  host: "172.26.25.139"
+  port: 30500
