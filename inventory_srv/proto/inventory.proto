@@ -15,6 +15,5 @@ message GoodsInvInfo {
 }
 
 message SellInfo {
-  repeated GoodsInvInfo goodsInfo = 1;
-  string orderSn = 2;
+  repeated GoodsInvInfo goodsInfo = 1;  // 购物车，一次sell多件商品
 }
