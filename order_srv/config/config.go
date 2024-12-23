@@ -13,12 +13,23 @@ type ConsulConfig struct {
 	Port int    `mapstructure:"port" json:"port" yaml:"port"`
 }
 
+type GoodsSrvConfig struct {
+	Name string `mapstructure:"name" json:"name" yaml:"name"`
+}
+
+type InventorySrvConfig struct {
+	Name string `mapstructure:"name" json:"name" yaml:"name"`
+}
+
 type ServerConfig struct {
 	Name       string       `mapstructure:"name" json:"name" yaml:"name"`
 	Host       string       `mapstructure:"host" yaml:"host"`
 	Tags       []string     `mapstructure:"tags" json:"tags" yaml:"tags"`
 	MysqlInfo  MysqlConfig  `mapstructure:"mysql" json:"mysql" yaml:"mysql"`
 	ConsulInfo ConsulConfig `mapstructure:"consul" json:"consul" yaml:"consul"`
+
+	GoodsSrvInfo     GoodsSrvConfig     `mapstructure:"goods_srv" json:"goods_srv" yaml:"goods_srv"`
+	InventorySrvInfo InventorySrvConfig `mapstructure:"inventory_srv" json:"inventory_srv" yaml:"inventory_srv"`
 }
 
 type NacosConfig struct {

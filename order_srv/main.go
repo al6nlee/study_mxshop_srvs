@@ -30,6 +30,7 @@ func main() {
 	initialize.InitLogger()
 	initialize.InitConfig()
 	initialize.InitDB()
+	initialize.InitSrvConn()
 
 	server := grpc.NewServer()
 	proto.RegisterOrderServer(server, &handler.OrderServer{})

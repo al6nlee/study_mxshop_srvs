@@ -13,3 +13,7 @@ mysql:
 consul:
   host: "172.26.25.139"
   port: 30500
+goods_srv:
+  name: goods_srv
+inventory_srv:
+  name: inventory_srv
