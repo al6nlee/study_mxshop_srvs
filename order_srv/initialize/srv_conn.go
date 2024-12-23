@@ -9,7 +9,7 @@ import (
 )
 
 func InitSrvConn() {
-	userConn, err := grpc.Dial(
+	goodsConn, err := grpc.Dial(
 		fmt.Sprintf(
 			"consul://%s:%d/%s?wait=14s",
 			global.ServerConfig.ConsulInfo.Host,
@@ -23,7 +23,7 @@ func InitSrvConn() {
 		zap.S().Fatal("[InitSrvConn] 连接 【用户服务失败】")
 	}
 	// 生成grpc的client调用接口
-	global.GoodsSrvClient = proto.NewGoodsClient(userConn)
+	global.GoodsSrvClient = proto.NewGoodsClient(goodsConn)
 
 	// 初始化库存服务连接
 	invConn, err := grpc.Dial(
