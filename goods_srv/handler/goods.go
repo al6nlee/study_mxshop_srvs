@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,8 +17,176 @@ type GoodsServer struct {
 	proto.UnimplementedGoodsServer
 }
 
-// 商品接口
+// 商品接口，使用es实现查询
+func buildQuery(req *proto.GoodsFilterRequest, categoryIDs []int) (map[string]interface{}, error) {
+	query := map[string]interface{}{
+		"bool": map[string]interface{}{
+			"must":   []interface{}{},
+			"filter": []interface{}{},
+		},
+	}
+
+	must := query["bool"].(map[string]interface{})["must"].([]interface{})
+	filter := query["bool"].(map[string]interface{})["filter"].([]interface{})
+
+	if req.KeyWords != "" {
+		query["bool"].(map[string]interface{})["must"] = append(must, map[string]interface{}{
+			"match": map[string]interface{}{
+				"name": req.KeyWords,
+			},
+		})
+	}
+	if req.IsHot {
+		query["bool"].(map[string]interface{})["filter"] = append(filter, map[string]interface{}{
+			"term": map[string]interface{}{
+				"is_hot": true,
+			},
+		})
+	}
+	if req.IsNew {
+		query["bool"].(map[string]interface{})["filter"] = append(filter, map[string]interface{}{
+			"term": map[string]interface{}{
+				"is_new": true,
+			},
+		})
+	}
+	if req.PriceMin > 0 {
+		query["bool"].(map[string]interface{})["filter"] = append(filter, map[string]interface{}{
+			"range": map[string]interface{}{
+				"shop_price": map[string]interface{}{
+					"gte": req.PriceMin,
+				},
+			},
+		})
+	}
+	if req.PriceMax > 0 {
+		query["bool"].(map[string]interface{})["filter"] = append(filter, map[string]interface{}{
+			"range": map[string]interface{}{
+				"shop_price": map[string]interface{}{
+					"lte": req.PriceMax,
+				},
+			},
+		})
+	}
+	if req.Brand > 0 {
+		query["bool"].(map[string]interface{})["filter"] = append(filter, map[string]interface{}{
+			"term": map[string]interface{}{
+				"brands_id": req.Brand,
+			},
+		})
+	}
+	if len(categoryIDs) > 0 {
+		query["bool"].(map[string]interface{})["filter"] = append(filter, map[string]interface{}{
+			"terms": map[string]interface{}{
+				"category_id": categoryIDs,
+			},
+		})
+	}
+	return query, nil
+}
+
+func getCategoryIDs(topCategory int32) ([]int, error) {
+	var categoryIDs []int
+	var category model.Category
+	if result := global.DB.First(&category, topCategory); result.RowsAffected == 0 {
+		return nil, fmt.Errorf("分类不存在")
+	}
+
+	switch category.Level {
+	case 1:
+		global.DB.Model(&model.Category{}).Where("parent_category_id IN (?)",
+			global.DB.Model(&model.Category{}).Select("id").Where("parent_category_id = ?", topCategory),
+		).Pluck("id", &categoryIDs)
+	case 2:
+		global.DB.Model(&model.Category{}).Where("parent_category_id = ?", topCategory).Pluck("id", &categoryIDs)
+	case 3:
+		categoryIDs = append(categoryIDs, int(topCategory))
+	}
+	return categoryIDs, nil
+}
+
 func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterRequest) (*proto.GoodsListResponse, error) {
+	// 关键词搜索、查询新品、查询热门商品、通过价格区间筛选， 通过商品分类筛选
+	goodsListResponse := &proto.GoodsListResponse{}
+	esClient := global.EsClient
+	// 分类处理
+	var categoryIDs []int
+	if req.TopCategory > 0 {
+		var err error
+		categoryIDs, err = getCategoryIDs(req.TopCategory)
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, "商品分类不存在")
+		}
+	}
+
+	// 构建查询
+	query, err := buildQuery(req, categoryIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 分页设置
+	from := (req.Pages - 1) * req.PagePerNums
+	if req.Pages <= 0 {
+		from = 0
+	}
+	if req.PagePerNums <= 0 || req.PagePerNums > 100 {
+		req.PagePerNums = 10
+	}
+
+	searchQuery := map[string]interface{}{
+		"from":  from,
+		"size":  req.PagePerNums,
+		"query": query,
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(searchQuery); err != nil {
+		return nil, status.Errorf(codes.Internal, "构造查询失败")
+	}
+
+	// 执行查询
+	res, err := esClient.Search(
+		esClient.Search.WithContext(ctx),
+		esClient.Search.WithIndex("goods"), // 假设索引名为 goods
+		esClient.Search.WithBody(&buf),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "搜索失败")
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return nil, status.Errorf(codes.Internal, "响应错误: %s", res.String())
+	}
+
+	// 解析响应
+	var esResponse struct {
+		Hits struct {
+			Total struct {
+				Value int64 `json:"value"`
+			} `json:"total"`
+			Hits []struct {
+				Source model.Goods `json:"_source"`
+			} `json:"hits"`
+		} `json:"hits"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&esResponse); err != nil {
+		return nil, status.Errorf(codes.Internal, "解析响应失败")
+	}
+
+	// 填充结果
+	goodsListResponse.Total = int32(esResponse.Hits.Total.Value)
+	for _, hit := range esResponse.Hits.Hits {
+		goodsInfoResponse := ModelToResponse(hit.Source)
+		goodsListResponse.Data = append(goodsListResponse.Data, &goodsInfoResponse)
+	}
+
+	return goodsListResponse, nil
+}
+
+// 商品接口
+func (s *GoodsServer) GoodsList1(ctx context.Context, req *proto.GoodsFilterRequest) (*proto.GoodsListResponse, error) {
 	// 关键词搜索、查询新品、查询热门商品、通过价格区间筛选， 通过商品分类筛选
 	goodsListResponse := &proto.GoodsListResponse{}
 
