@@ -13,12 +13,18 @@ type ConsulConfig struct {
 	Port int    `mapstructure:"port" json:"port" yaml:"port"`
 }
 
+type EsConfig struct {
+	Host string `mapstructure:"host" json:"host" yaml:"host"`
+	Port int    `mapstructure:"port" json:"port" yaml:"port"`
+}
+
 type ServerConfig struct {
 	Name       string       `mapstructure:"name" json:"name" yaml:"name"`
 	Host       string       `mapstructure:"host" yaml:"host"`
 	Tags       []string     `mapstructure:"tags" json:"tags" yaml:"tags"`
 	MysqlInfo  MysqlConfig  `mapstructure:"mysql" json:"mysql" yaml:"mysql"`
 	ConsulInfo ConsulConfig `mapstructure:"consul" json:"consul" yaml:"consul"`
+	EsInfo     EsConfig     `mapstructure:"es" json:"es" yaml:"es"`
 }
 
 type NacosConfig struct {
